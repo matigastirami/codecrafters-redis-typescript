@@ -7,7 +7,7 @@ console.log("Logs from your program will appear here!");
 const server: net.Server = net.createServer((connection: net.Socket) => {
   // Handle connection
   connection.on('data', (data) => {
-    console.log('data', data.toString())
+    console.log('data', JSON.stringify(data.toString()))
     const response = Buffer.from("+PONG\r\n", 'utf-8');
     connection.write(response);
   });
