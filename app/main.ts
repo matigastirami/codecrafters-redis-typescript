@@ -41,18 +41,23 @@ function RESPToHumanReadable(command: string): Array<string> {
   return [];
 }
 
-function strToRESP(str: string): string {
-  return `+${str}\r\n`;
+function strToRESP(str: string | null): string {
+  return str ? `+${str}\r\n` : '$-1\r\n';
+}
+
+type RedisStoreItem = {
+  value: string;
+  expires?: number;
 }
 
 type RedisStore = {
-  [key: string]: string;
+  [key: string]: RedisStoreItem;
 }
 
 const store: RedisStore = {};
 
 function executeCommand(command: Array<string>): string {
-  let result = '';
+  let result: string | null = '';
   if (command[0] === 'PING') {
     result = 'PONG';
   }
@@ -60,11 +65,26 @@ function executeCommand(command: Array<string>): string {
     result = command[1];
   }
   if (command[0] === 'SET') {
-    store[command[1]] = command[2];
+    const currentTimestamp = new Date()
+    const shouldSetExpiration = command[3] === 'px';
+    store[command[1]] = {
+      value: command[2],
+      expires: shouldSetExpiration ? Number(command[4]) + currentTimestamp.getTime() : undefined
+    };
     result = 'OK';
   }
   if (command[0] === 'GET') {
-    result = store[command[1]];
+    const item = store[command[1]];
+    if (!item) {
+      result = '-1';
+    } else {
+      if (item.expires && (new Date()).getTime() > item.expires) {
+        result = null;
+        delete store[command[1]];
+      } else {
+        result = item.value;
+      }
+    }
   }
 
   return strToRESP(result);
