@@ -45,6 +45,12 @@ function strToRESP(str: string): string {
   return `+${str}\r\n`;
 }
 
+type RedisStore = {
+  [key: string]: string;
+}
+
+const store: RedisStore = {};
+
 function executeCommand(command: Array<string>): string {
   let result = '';
   if (command[0] === 'PING') {
@@ -52,6 +58,13 @@ function executeCommand(command: Array<string>): string {
   }
   if (command[0] === 'ECHO') {
     result = command[1];
+  }
+  if (command[0] === 'SET') {
+    store[command[1]] = command[2];
+    result = 'OK';
+  }
+  if (command[0] === 'GET') {
+    result = store[command[1]];
   }
 
   return strToRESP(result);
